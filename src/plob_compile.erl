@@ -88,13 +88,13 @@ compile_bindings(Unbound) ->
     {Query, Bindings, _} =
         lists:foldl(
           fun(#binding{}=Binding, {Q, B, Count}) ->
-                  case Binding#binding.val of
-                      {sql, Literal} ->
-                          {[Literal|Q], B, Count};
-                      _ ->
-                      {P,C1}=get_placeholder(Binding, Q, Count),
-                      {P, get_binding_val(Binding, B), C1}
-                  end;
+              case Binding#binding.val of
+                {sql, Literal} ->
+                  {[Literal|Q], B, Count};
+                _ ->
+                  {P,C1}=get_placeholder(Binding, Q, Count),
+                  {P, get_binding_val(Binding, B), C1}
+              end;
              % BGH: Is this used? For what?
              (Bin, {Q, B, Count}) when is_binary(Bin) ->
                   {[Bin|Q], B, Count}
@@ -103,30 +103,30 @@ compile_bindings(Unbound) ->
     {lists:reverse(Query), lists:reverse(Bindings)}.
 
 
+get_placeholder(#binding{ val = null }, Acc, Count) ->
+  {[<<"null ">>|Acc],Count};
 get_placeholder(#binding{ val = {between, [_, _]} }, Acc, Count) ->
   PH1 = get_placeholder(Count),
   PH2 = get_placeholder(Count+1),
   {[<<PH1/binary, " and ",PH2/binary>>|Acc], Count+2};
-
 get_placeholder(#binding{ val = {any, _} }, Acc, Count) ->
   PH = get_placeholder(Count),
   {[<<"ANY(", PH/binary, ")">>|Acc], Count+1};
-
 get_placeholder(#binding{}, Acc, Count) ->
   {[get_placeholder(Count)|Acc], Count+1}.
-
 get_placeholder(Count) ->
   CountBin = integer_to_binary(Count),
   <<"$", CountBin/binary>>.
 
 
+get_binding_val(#binding{ val = null }, Acc) ->
+    Acc;
 get_binding_val(#binding{ val = {between, [V1, V2]} }, Acc) ->
     [V2,V1|Acc];
 get_binding_val(#binding{ val = {any, Val} }, Acc) ->
     [Val|Acc];
 get_binding_val(#binding{ val = Val }, Acc) ->
     [Val|Acc].
-
 
 
 -spec compile_table_names(fieldset()) -> iodata().
@@ -207,6 +207,9 @@ field_values({op, between, {V1, V2}}, Field) ->
       plob_codec:encode(Field#field.codec, V2)
      ]
     }}];
+
+field_values(null, _Field) ->
+  [{<<" is ">>, null }];
 
 field_values(ErlVal, Field) ->
     {Op, Val} = case ErlVal of
