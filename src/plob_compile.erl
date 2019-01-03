@@ -92,8 +92,8 @@ compile_bindings(Unbound) ->
                       {sql, Literal} ->
                           {[Literal|Q], B, Count};
                       _ ->
-                          {[get_placeholder(Binding, Count)|Q],
-                           [get_binding_val(Binding)|B], Count+1}
+                      {P,C1}=get_placeholder(Binding, Q, Count),
+                      {P, get_binding_val(Binding, B), C1}
                   end;
              % BGH: Is this used? For what?
              (Bin, {Q, B, Count}) when is_binary(Bin) ->
@@ -103,21 +103,29 @@ compile_bindings(Unbound) ->
     {lists:reverse(Query), lists:reverse(Bindings)}.
 
 
-get_placeholder(#binding{ val = {any, _} }, Count) ->
-    PH = get_placeholder(Count),
-    <<"ANY(", PH/binary, ")">>;
-get_placeholder(#binding{}, Count) ->
-    get_placeholder(Count).
+get_placeholder(#binding{ val = {between, [_, _]} }, Acc, Count) ->
+  PH1 = get_placeholder(Count),
+  PH2 = get_placeholder(Count+1),
+  {[<<PH1/binary, " and ",PH2/binary>>|Acc], Count+2};
+
+get_placeholder(#binding{ val = {any, _} }, Acc, Count) ->
+  PH = get_placeholder(Count),
+  {[<<"ANY(", PH/binary, ")">>|Acc], Count+1};
+
+get_placeholder(#binding{}, Acc, Count) ->
+  {[get_placeholder(Count)|Acc], Count+1}.
 
 get_placeholder(Count) ->
-    CountBin = integer_to_binary(Count),
-    <<"$", CountBin/binary>>.
+  CountBin = integer_to_binary(Count),
+  <<"$", CountBin/binary>>.
 
 
-get_binding_val(#binding{ val = {any, Val} }) ->
-    Val;
-get_binding_val(#binding{ val = Val }) ->
-    Val.
+get_binding_val(#binding{ val = {between, [V1, V2]} }, Acc) ->
+    [V2,V1|Acc];
+get_binding_val(#binding{ val = {any, Val} }, Acc) ->
+    [Val|Acc];
+get_binding_val(#binding{ val = Val }, Acc) ->
+    [Val|Acc].
 
 
 
@@ -186,9 +194,20 @@ field_values(ErlVal, #field{columns=Columns}=Field)
         true -> [{?EQ, V} || V <- DBVals];
         false -> throw({wrong_column_count, Field, DBVals})
     end;
+
 field_values({op, in, Vals}, Field) ->
     [{<<" = ">>, {any, [plob_codec:encode(Field#field.codec, Val)
                         || Val <- Vals]}}];
+
+field_values({op, between, {V1, V2}}, Field) ->
+  [{<<" between ">>,
+    {between,
+     [ 
+      plob_codec:encode(Field#field.codec, V1),
+      plob_codec:encode(Field#field.codec, V2)
+     ]
+    }}];
+
 field_values(ErlVal, Field) ->
     {Op, Val} = case ErlVal of
                     {op, O, V} -> {normalize_operator(O), V};

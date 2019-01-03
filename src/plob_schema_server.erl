@@ -60,19 +60,19 @@ handle_call({set_schema, Name, Schema}, _From, State) ->
     {reply, ok, State};
 
 handle_call(Request, _From, State) ->
-    lager:warning("Unexpected call: ~p", [Request]),
+    error_logger:error_msg("Unexpected call: ~p", [Request]),
     {reply, ok, State}.
 
 %%%===================================================================
 
 handle_cast(Msg, State) ->
-    lager:warning("Unexpected cast: ~p", [Msg]),
+    error_logger:error_msg("Unexpected cast: ~p", [Msg]),
     {noreply, State}.
 
 %%%===================================================================
 
 handle_info(Info, State) ->
-    lager:warning("Unexpected info: ~p", [Info]),
+    error_logger:error_msg("Unexpected info: ~p", [Info]),
     {noreply, State}.
 
 %%%===================================================================
@@ -80,13 +80,13 @@ handle_info(Info, State) ->
 terminate(normal, _State) ->
     ok;
 terminate(Reason, _State) ->
-    lager:debug("Terminating: ~p", [Reason]),
+    error_logger:error_msg("Terminating: ~p", [Reason]),
     ok.
 
 %%%===================================================================
 
 code_change(OldVsn, State, Extra) ->
-    lager:info("Upgrade from version ~p, extra ~p", [OldVsn, Extra]),
+    error_logger:error_msg("Upgrade from version ~p, extra ~p", [OldVsn, Extra]),
     {ok, State}.
 
 
