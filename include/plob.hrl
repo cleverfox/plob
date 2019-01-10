@@ -16,6 +16,8 @@
           
 -record(field, {
           name :: fieldname(),
+          title :: string(),
+          default :: any(),
           columns :: columns() | undefined,
           validator :: validator() | undefined,
           codec :: codec()

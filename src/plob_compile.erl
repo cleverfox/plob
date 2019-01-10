@@ -199,7 +199,7 @@ field_values({op, in, Vals}, Field) ->
     [{<<" = ">>, {any, [plob_codec:encode(Field#field.codec, Val)
                         || Val <- Vals]}}];
 
-field_values({op, between, {V1, V2}}, Field) ->
+field_values({between, V1, V2}, Field) ->
   [{<<" between ">>,
     {between,
      [ 
