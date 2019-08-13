@@ -1,5 +1,6 @@
 *.plt
 *.dump
+*~
 ebin/*
 deps
 _build
