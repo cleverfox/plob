@@ -13,6 +13,8 @@
 -type validator() :: fun((erlval()) -> ok | {error, any()}).
 
 -type rowvals() :: #{ fieldname() => erlval() }.
+
+-type datatype() :: 'int' | 'varchar' | 'date' | 'time' | 'timestamp' | 'text' | undefined.
           
 -record(field, {
           name :: fieldname(),
@@ -20,7 +22,8 @@
           default :: any(),
           columns :: columns() | undefined,
           validator :: validator() | undefined,
-          codec :: codec()
+          codec :: codec(),
+          type :: datatype()
          }).
 
 -record(schema, {
